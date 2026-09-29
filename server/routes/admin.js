@@ -216,7 +216,8 @@ router.delete('/courses/:id', admin, h((req, res) => {
 router.put('/courses/:id/lecturers', admin, h((req, res) => {
   const c = db.prepare('SELECT * FROM courses WHERE id=?').get(req.params.id);
   if (!c) throw notFound('Course not found.');
-  const ids = Array.isArray(req.body.lecturerIds) ? req.body.lecturerIds : [];
+  const ids = Array.isArray(req.body.lecturerIds) ? [...new Set(req.body.lecturerIds)] : [];
+  if (ids.length > 1) throw bad('Only one lecturer can be assigned to a course.');
   const valid = ids.filter(i => db.prepare(`SELECT 1 FROM users WHERE id=? AND role='lecturer' AND status='active'`).get(i));
   db.transaction(() => {
     db.prepare('DELETE FROM course_lecturers WHERE course_id=?').run(c.id);

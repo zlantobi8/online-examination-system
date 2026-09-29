@@ -33,27 +33,20 @@
         ${c.studentCount} student${c.studentCount === 1 ? '' : 's'} this semester ·
         ${c.questionCount} questions · ${c.examCount} exams</div></div>
       <div class="btn-row">
-        <button class="btn btn-outline btn-sm" data-lecturers="${c.id}">Assign lecturers</button><button class="btn btn-outline btn-sm" data-students="${c.id}">Student roster</button>
+        <button class="btn btn-outline btn-sm" data-manage="${c.id}">Lecturers &amp; roster</button>
         <button class="btn btn-outline btn-sm" data-edit="${c.id}">Edit</button>
         ${c.status === 'active' ? `<button class="btn btn-outline btn-sm" data-status="closed" data-id="${c.id}">Close</button>` : ''}
         ${c.status === 'closed' ? `<button class="btn btn-outline btn-sm" data-status="active" data-id="${c.id}">Reopen</button><button class="btn btn-outline btn-sm" data-status="archived" data-id="${c.id}">Archive</button>` : ''}
         <button class="btn btn-danger btn-sm" data-del="${c.id}">Delete</button></div></div>`).join('');
 
     card.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEditor(courses.find(c => c.id === b.dataset.edit))));
-    card.querySelectorAll('[data-lecturers]').forEach(b => b.addEventListener('click', () => openLecturers(courses.find(c => c.id === b.dataset.lecturers))));
-    card.querySelectorAll('[data-students]').forEach(b => b.addEventListener('click', () => openStudentRoster(courses.find(c => c.id === b.dataset.students))));
+    card.querySelectorAll('[data-manage]').forEach(b => b.addEventListener('click', () => openManage(courses.find(c => c.id === b.dataset.manage))));
     card.querySelectorAll('[data-status]').forEach(b => b.addEventListener('click', async () => {
       try { await API.post('/courses/' + b.dataset.id + '/status', { status: b.dataset.status }); toast('Course updated.', 'success'); loadAll(); } catch (e) { toast(e.message, 'error'); }
     }));
     card.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
       if (!confirm('Delete this course? Only possible if it has no questions, exams or registrations — otherwise archive it instead.')) return;
-      try {
-        await API.del('/courses/' + b.dataset.del);
-        toast('Course permanently deleted.', 'success');
-        loadAll();
-      } catch (e) {
-        toast(e.message || 'Course could not be deleted. If it has questions, exams, registrations, or results, keep it archived so academic history is preserved.', 'error');
-      }
+      try { await API.del('/courses/' + b.dataset.del); toast('Course deleted.', 'success'); loadAll(); } catch (e) { toast(e.message, 'error'); }
     }));
   }
 
@@ -97,47 +90,28 @@
     render();
   }
 
-  async function openLecturers(c) {
-    const assigned = c.lecturers.map(l => l.id);
-    document.getElementById('editorHost').innerHTML = `<div class="modal-backdrop" id="backdrop"><div class="modal" style="max-width:680px;">
-      <div class="card-head"><h2>${escapeHtml(c.code)} — assign lecturers</h2><button class="btn btn-outline btn-sm" id="closeBtn">Close</button></div>
-      <p class="hint">Assigning a lecturer does not enroll or assign any students. Students register for eligible courses themselves.</p>
-      <div class="section-title" style="margin-top:6px;"><h2 style="font-size:1rem;">Lecturers</h2></div>
-      ${lecturers.length === 0 ? '<p class="hint">No lecturer accounts exist yet.</p>' : lecturers.map(l => `<label class="q-row" style="cursor:pointer; padding:10px 4px;">
-        <input type="checkbox" data-lec="${l.id}" ${assigned.includes(l.id) ? 'checked' : ''}>
-        <div class="q-body"><div class="q-text" style="font-weight:600;">${escapeHtml(l.name)}</div><div class="hint">${escapeHtml(l.staffId || l.email)}</div></div></label>`).join('')}
-      <div class="btn-row"><button class="btn" id="saveLecturersBtn">Save lecturer assignment</button></div>
-    </div></div>`;
-
-    const close = () => { document.getElementById('editorHost').innerHTML = ''; loadAll(); };
-    document.getElementById('closeBtn').addEventListener('click', close);
-    document.getElementById('backdrop').addEventListener('click', e => { if (e.target.id === 'backdrop') close(); });
-    document.getElementById('saveLecturersBtn').addEventListener('click', async () => {
-      const ids = [...document.querySelectorAll('[data-lec]:checked')].map(x => x.dataset.lec);
-      try {
-        await API.put('/courses/' + c.id + '/lecturers', { lecturerIds: ids });
-        toast('Lecturer assignment updated. No students were assigned.', 'success');
-        close();
-      } catch (e) { toast(e.message, 'error'); }
-    });
-  }
-
-  async function openStudentRoster(c) {
+  async function openManage(c) {
+    managing = c;
     let roster;
     try { roster = await API.get('/courses/' + c.id + '/students'); } catch (e) { return toast(e.message, 'error'); }
-
+    const assigned = c.lecturers.map(l => l.id);
     document.getElementById('editorHost').innerHTML = `<div class="modal-backdrop" id="backdrop"><div class="modal" style="max-width:680px;">
-      <div class="card-head"><h2>${escapeHtml(c.code)} — student roster</h2><button class="btn btn-outline btn-sm" id="closeBtn">Close</button></div>
-      <p class="hint">Student assignment is optional. Students normally register for eligible courses themselves. Use this screen only for exceptional cases, such as a student who cannot complete registration due to a technical issue.</p>
+      <div class="card-head"><h2>${escapeHtml(c.code)} — lecturers &amp; roster</h2><button class="btn btn-outline btn-sm" id="closeBtn">Close</button></div>
+      <div class="section-title" style="margin-top:6px;"><h2 style="font-size:1rem;">Lecturer</h2></div><p class="hint">Only one lecturer can be assigned to a course. Leave everyone unselected if the course has no lecturer yet.</p>
+      ${lecturers.length === 0 ? '<p class="hint">No lecturer accounts exist yet.</p>' : lecturers.map(l => `<label class="q-row" style="cursor:pointer; padding:10px 4px;">
+        <input type="radio" name="courseLecturer" data-lec="${l.id}" ${assigned.includes(l.id) ? 'checked' : ''}>
+        <div class="q-body"><div class="q-text" style="font-weight:600;">${escapeHtml(l.name)}</div><div class="hint">${escapeHtml(l.staffId || l.email)}</div></div></label>`).join('')}
+      <div class="section-title"><h2 style="font-size:1rem;">Registered students (this semester)</h2></div>
+      <p class="hint">Students are registered automatically when they select an eligible course. This roster is mainly for visibility and exceptional admin intervention.</p>
       <div id="rosterList" style="max-height:280px; overflow-y:auto; margin-bottom:12px;"></div>
       <div class="field"><label for="addStudent">Enrol a student directly</label>
         <select id="addStudent"><option value="">Choose a student…</option></select></div>
       <div class="btn-row"><button class="btn btn-sm" id="addStudentBtn">Add &amp; approve</button></div></div></div>`;
 
-    const STATUS = { draft: ['chip-draft', 'Draft'], submitted: ['chip-awaiting', 'Submitted'], approved: ['chip-open', 'Approved'], withdrawn: ['chip-closed', 'Withdrawn'] };
+    const STATUS = { draft: ['chip-draft', 'Draft'], submitted: ['chip-awaiting', 'Submitted'], approved: ['chip-open', 'Approved'] };
     document.getElementById('rosterList').innerHTML = roster.length === 0 ? '<p class="hint">No student has registered for this course yet.</p>'
       : roster.map(s => `<div class="q-row"><div class="q-body"><div class="q-text">${escapeHtml(s.name)}</div><div class="hint mono">${escapeHtml(s.matric || s.email)}</div></div>
-        <span class="chip ${STATUS[s.status]?.[0] || 'chip-draft'}">${STATUS[s.status]?.[1] || escapeHtml(s.status)}</span>
+        <span class="chip ${STATUS[s.status][0]}">${STATUS[s.status][1]}</span>
         ${s.status === 'submitted' ? `<button class="btn btn-sm" data-approve="${s.registrationId}">Approve</button>` : ''}
         ${s.status === 'approved' ? `<button class="btn btn-outline btn-sm" data-withdraw="${s.registrationId}">Remove</button>` : ''}</div>`).join('');
 
@@ -146,28 +120,23 @@
     const already = new Set(roster.map(s => s.id));
     document.getElementById('addStudent').innerHTML += allStudents.filter(s => !already.has(s.id)).map(s => `<option value="${s.id}">${escapeHtml(s.name)} — ${escapeHtml(s.matric || s.email)}</option>`).join('');
 
-    const close = () => { document.getElementById('editorHost').innerHTML = ''; loadAll(); };
+    const close = () => { managing = null; document.getElementById('editorHost').innerHTML = ''; loadAll(); };
     document.getElementById('closeBtn').addEventListener('click', close);
     document.getElementById('backdrop').addEventListener('click', e => { if (e.target.id === 'backdrop') close(); });
-    document.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', async () => {
-      try { await API.post('/admin/registrations/' + b.dataset.approve + '/approve'); toast('Approved.', 'success'); openStudentRoster(c); }
-      catch (e) { toast(e.message, 'error'); }
+    document.querySelectorAll('[data-lec]').forEach(cb => cb.addEventListener('change', async () => {
+      const ids = [...document.querySelectorAll('[data-lec]:checked')].map(x => x.dataset.lec);
+      try { await API.put('/courses/' + c.id + '/lecturers', { lecturerIds: ids }); toast('Lecturer assignment updated.', 'success'); } catch (e) { toast(e.message, 'error'); }
     }));
+    document.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', async () => { try { await API.post('/admin/registrations/' + b.dataset.approve + '/approve'); toast('Approved.', 'success'); openManage(c); } catch (e) { toast(e.message, 'error'); } }));
     document.querySelectorAll('[data-withdraw]').forEach(b => b.addEventListener('click', async () => {
       if (!confirm('Remove this student from the course? Any exam results already recorded are kept.')) return;
-      try { await API.post('/admin/registrations/' + b.dataset.withdraw + '/withdraw'); toast('Removed.', 'success'); openStudentRoster(c); }
-      catch (e) { toast(e.message, 'error'); }
+      try { await API.post('/admin/registrations/' + b.dataset.withdraw + '/withdraw'); toast('Removed.', 'success'); openManage(c); } catch (e) { toast(e.message, 'error'); }
     }));
     document.getElementById('addStudentBtn').addEventListener('click', async () => {
       const sid = document.getElementById('addStudent').value;
       if (!sid) return;
-      try {
-        await API.post('/admin/registrations', { studentId: sid, courseId: c.id });
-        toast('Student enrolled.', 'success');
-        openStudentRoster(c);
-      } catch (e) { toast(e.message, 'error'); }
+      try { await API.post('/admin/registrations', { studentId: sid, courseId: c.id }); toast('Student enrolled.', 'success'); openManage(c); } catch (e) { toast(e.message, 'error'); }
     });
   }
-
   loadAll();
 })();

@@ -129,6 +129,11 @@ CREATE TABLE IF NOT EXISTS course_lecturers (
   PRIMARY KEY (course_id, lecturer_id)
 );
 
+-- A course has exactly zero or one assigned lecturer. Keep the earliest assignment if an older database has duplicates, then enforce the rule.
+DELETE FROM course_lecturers a
+WHERE a.ctid NOT IN (SELECT MIN(b.ctid) FROM course_lecturers b GROUP BY b.course_id);
+CREATE UNIQUE INDEX IF NOT EXISTS course_one_lecturer ON course_lecturers(course_id);
+
 CREATE TABLE IF NOT EXISTS registrations (
   id TEXT PRIMARY KEY,
   student_id TEXT NOT NULL REFERENCES users(id),

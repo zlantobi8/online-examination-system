@@ -29,7 +29,7 @@ function run() {
     lecs.forEach(l => db.prepare('INSERT INTO course_lecturers VALUES(?,?,?)').run(id, l, now()));
     return id;
   };
-  const web = mkCourse('SWD 412', 'Web Application Development', 'Computer Science', [lec, co]);
+  const web = mkCourse('SWD 412', 'Web Application Development', 'Computer Science', [lec]);
   const dbms = mkCourse('SWD 408', 'Database Management Systems', 'Computer Science', [lec]);
   studs.forEach(s => [web, dbms].forEach(c => db.prepare(`INSERT INTO registrations(id,student_id,course_id,session_label,semester,status,created_at,submitted_at,approved_at,approved_by) VALUES(?,?,?,?,?, 'approved',?,?,?,?)`)
     .run(uid('reg'), s, c, '2026/2027', 'First Semester', now(), now(), now(), admin)));

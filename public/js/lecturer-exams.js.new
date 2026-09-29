@@ -103,29 +103,18 @@
     const importJsonFile = document.getElementById('importJsonFile');
     const importExcelBtn = document.getElementById('importExcelBtn');
     const importExcelFile = document.getElementById('importExcelFile');
-    let pendingImportCourseId = null;
-
-    function openImportCourseChooser(kind) {
-      const activeCourses = courses.filter(c => c.status === 'active');
-      if (!activeCourses.length) { toast('There are no active courses available for import.', 'error'); return; }
-      const backdrop = document.createElement('div');
-      backdrop.className = 'modal-backdrop';
-      backdrop.id = 'importCourseChooser';
-      backdrop.innerHTML = `<div class="modal" style="max-width:620px">
-        <div class="card-head"><div><h2>Import ${kind} exam</h2><p class="hint">Select the course for this exam. You will not need to enter a course number.</p></div><button class="btn btn-outline btn-sm" id="closeImportCourseChooser">Cancel</button></div>
-        <div class="field"><label for="importCourseSelect">Course</label><select id="importCourseSelect">${activeCourses.map(c => `<option value="${c.id}">${escapeHtml(c.code + ' — ' + c.title)}</option>`).join('')}</select></div>
-        <div class="btn-row" style="justify-content:flex-end"><button class="btn" id="continueImport">Choose ${kind} file</button></div>
-      </div>`;
-      document.body.appendChild(backdrop);
-      const close = () => backdrop.remove();
-      backdrop.querySelector('#closeImportCourseChooser').addEventListener('click', close);
-      backdrop.addEventListener('click', e => { if (e.target === backdrop) close(); });
-      backdrop.querySelector('#continueImport').addEventListener('click', () => {
-        pendingImportCourseId = backdrop.querySelector('#importCourseSelect').value;
-        close();
-        (kind === 'JSON' ? importJsonFile : importExcelFile).click();
-      });
-    }
+    const chooseCourse = () => {
+      let target = courses[0];
+      if (courses.length > 1) {
+        const choices = courses.map((c, i) => `${i + 1}. ${c.code} — ${c.title}`).join('\n');
+        const answer = prompt('Import this exam into which course?\n\n' + choices + '\n\nEnter the course number:');
+        if (answer === null) return null;
+        const index = parseInt(answer, 10) - 1;
+        if (!(index >= 0 && index < courses.length)) throw new Error('Invalid course selection.');
+        target = courses[index];
+      }
+      return target;
+    };
 
     function closeImportPreview() {
       document.getElementById('importPreviewBackdrop')?.remove();
@@ -156,14 +145,13 @@
       backdrop.addEventListener('click', e => { if (e.target === backdrop) closeImportPreview(); });
     }
 
-    importJsonBtn.addEventListener('click', () => openImportCourseChooser('JSON'));
+    importJsonBtn.addEventListener('click', () => importJsonFile.click());
     importJsonFile.addEventListener('change', async () => {
       const file = importJsonFile.files && importJsonFile.files[0]; if (!file) return;
       try {
         const pkg = JSON.parse(await file.text());
-        const courseId = pendingImportCourseId; if (!courseId) throw new Error('Please select a course first.');
-        pkg.courseId = courseId;
-        pendingImportCourseId = null;
+        const target = chooseCourse(); if (!target) return;
+        pkg.courseId = target.id;
         const preview = await API.post('/exams/import/preview', pkg);
         showImportPreview(preview, async () => {
           const result = await API.post('/exams/import', pkg);
@@ -173,17 +161,16 @@
       } catch (err) { toast(err.message || 'Could not read this JSON exam.', 'error'); }
       finally { importJsonFile.value = ''; }
     });
-    importExcelBtn.addEventListener('click', () => openImportCourseChooser('Excel'));
+    importExcelBtn.addEventListener('click', () => importExcelFile.click());
     document.getElementById('templateExcelBtn').addEventListener('click', () => { const a = document.createElement('a'); a.href = '/api/exams/excel-template'; a.download = 'exam-import-template.xlsx'; document.body.appendChild(a); a.click(); a.remove(); });
     importExcelFile.addEventListener('change', async () => {
       const file = importExcelFile.files && importExcelFile.files[0]; if (!file) return;
       try {
-        const courseId = pendingImportCourseId; if (!courseId) throw new Error('Please select a course first.');
-        pendingImportCourseId = null;
-        const previewForm = new FormData(); previewForm.append('file', file); previewForm.append('courseId', courseId);
+        const target = chooseCourse(); if (!target) return;
+        const previewForm = new FormData(); previewForm.append('file', file); previewForm.append('courseId', target.id);
         const preview = await API.upload('/exams/import.xlsx/preview', previewForm);
         showImportPreview(preview, async () => {
-          const form = new FormData(); form.append('file', file); form.append('courseId', courseId);
+          const form = new FormData(); form.append('file', file); form.append('courseId', target.id);
           const result = await API.upload('/exams/import.xlsx', form);
           toast(`Exam imported with ${result.importedQuestions} question${result.importedQuestions === 1 ? '' : 's'}.`, 'success');
           window.location.href = 'lecturer-exam-edit.html?exam=' + result.id;
