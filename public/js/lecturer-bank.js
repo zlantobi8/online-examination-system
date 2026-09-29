@@ -18,7 +18,7 @@
 
   content.innerHTML = `
     <div class="page-head"><div><h1>Question bank</h1><p>Questions live on the course. Publishing an exam freezes a copy, so editing the bank later never changes an exam already set.</p></div>
-      <button class="btn" id="newQBtn">+ New question</button></div>
+      <div class="btn-row"><button class="btn btn-outline" id="importBankBtn">Import</button><button class="btn" id="newQBtn">+ New question</button></div></div>
     <div class="toolbar">
       <select id="courseSel">${courses.map(c => `<option value="${c.id}">${escapeHtml(c.code + ' — ' + c.title)}</option>`).join('')}</select>
       <select id="typeSel"><option value="all">All types</option>${TYPES.map(t => `<option value="${t}">${TYPE_LABEL[t]}</option>`).join('')}</select>
@@ -32,6 +32,7 @@
   document.getElementById('typeSel').addEventListener('change', e => { filterType = e.target.value; renderList(); });
   document.getElementById('diffSel').addEventListener('change', e => { filterDiff = e.target.value; renderList(); });
   document.getElementById('newQBtn').addEventListener('click', () => openEditor(null));
+  document.getElementById('importBankBtn').addEventListener('click', openImport);
   document.getElementById('exportBankBtn').addEventListener('click', exportBank);
 
   async function loadBank() {
@@ -149,6 +150,50 @@
         closeEditor(); toast('Question saved.', 'success'); loadBank();
       } catch (e) { err.textContent = e.message; err.style.display = 'block'; }
     });
+  }
+
+  function openImport() {
+    const c = courses.find(x => x.id === courseId);
+    const host = document.getElementById('editorHost');
+    host.innerHTML = `<div class="modal-backdrop" id="importBackdrop"><div class="modal">
+      <div class="card-head"><h2>Import questions</h2><button class="btn btn-outline btn-sm" id="closeImport">Close</button></div>
+      <p class="hint">Import questions directly into <strong>${escapeHtml(c ? c.code + ' — ' + c.title : 'this course')}</strong>. No course number is required.</p>
+      <div class="btn-row" style="margin-top:18px;">
+        <button class="btn" id="importJsonBtn">Import JSON</button>
+        <button class="btn btn-outline" id="importExcelBtn">Import Excel</button>
+      </div>
+      <input type="file" id="bankFile" hidden>
+      <div id="importStatus" class="hint" style="margin-top:14px;"></div>
+    </div></div>`;
+    const close = () => host.innerHTML = '';
+    document.getElementById('closeImport').addEventListener('click', close);
+    document.getElementById('importBackdrop').addEventListener('click', e => { if (e.target.id === 'importBackdrop') close(); });
+    document.getElementById('importJsonBtn').addEventListener('click', () => choose('json'));
+    document.getElementById('importExcelBtn').addEventListener('click', () => choose('xlsx'));
+    const input = document.getElementById('bankFile');
+    async function choose(kind) {
+      input.accept = kind === 'json' ? '.json,application/json' : '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      input.value = ''; input.click();
+      input.onchange = async () => {
+        const file = input.files && input.files[0]; if (!file) return;
+        const status = document.getElementById('importStatus');
+        status.textContent = 'Importing…';
+        try {
+          let result;
+          if (kind === 'json') {
+            const text = await file.text();
+            let payload; try { payload = JSON.parse(text); } catch { throw new Error('Invalid JSON file.'); }
+            payload = Array.isArray(payload) ? { questions: payload } : payload;
+            payload.courseId = courseId;
+            result = await API.post('/courses/' + courseId + '/questions/import', payload);
+          } else {
+            const fd = new FormData(); fd.append('file', file); fd.append('courseId', courseId);
+            result = await API.post('/courses/' + courseId + '/questions/import.xlsx', fd);
+          }
+          close(); toast(`${result.importedQuestions} question${result.importedQuestions === 1 ? '' : 's'} imported successfully.`, 'success'); loadBank();
+        } catch (e) { status.textContent = e.message || 'Import failed.'; toast(e.message || 'Import failed.', 'error'); }
+      };
+    }
   }
 
   function exportBank() {

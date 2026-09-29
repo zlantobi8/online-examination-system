@@ -96,6 +96,42 @@ router.delete('/questions/:id', A.requireAuth, A.requireRole('lecturer'), h((req
   res.json({ ok: true, archived: inPublished });
 }));
 
+
+/* ============ question bank import ============ */
+function questionBankImportPayload(req) {
+  let pkg = req.body;
+  if (req.file) pkg = parseExcelImport(req);
+  const sourceQuestions = Array.isArray(pkg) ? pkg : (Array.isArray(pkg?.questions) ? pkg.questions : []);
+  if (!sourceQuestions.length) throw bad('The import package contains no questions.');
+  return sourceQuestions.map((raw, i) => {
+    const q = importQuestionShape(raw);
+    const validated = validateQuestion({
+      type: q.type, text: q.text, topic: q.topic, difficulty: q.difficulty,
+      marks: q.marks, options: q.options, correctOptionId: q.correctOptionId,
+      acceptedAnswers: q.acceptedAnswers, grading: q.grading
+    });
+    return { ...validated, sourceId: q.id || ('import-' + (i + 1)) };
+  });
+}
+
+function importQuestionBank(req, res) {
+  const courseId = req.body.courseId || req.params.id;
+  const c = assertCourseAccess(req.user, courseId);
+  if (c.status !== 'active') throw bad('This course is not active.');
+  const imported = questionBankImportPayload(req);
+  const created = db.transaction(() => imported.map(q => {
+    const id = uid('q');
+    db.prepare(`INSERT INTO questions(id,course_id,type,text,topic,difficulty,marks,options,correct,accepted,grading,created_by,status,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?, 'active',?)`)
+      .run(id, c.id, q.type, q.text, q.topic, q.difficulty, q.marks, JSON.stringify(q.options), q.correct, JSON.stringify(q.accepted), q.grading, req.user.id, now());
+    return id;
+  }))();
+  audit(req.user.id, 'QUESTION_BANK_IMPORTED', 'course', c.id, { questionCount: created.length, source: req.file ? 'xlsx' : 'json' });
+  res.status(201).json({ ok: true, courseId: c.id, importedQuestions: created.length });
+}
+
+router.post('/courses/:id/questions/import', A.requireAuth, A.requireRole('lecturer'), h(importQuestionBank));
+router.post('/courses/:id/questions/import.xlsx', A.requireAuth, A.requireRole('lecturer'), upload.single('file'), h(importQuestionBank));
+
 /* ============ exams ============ */
 function examAccess(req, id) {
   const e = db.prepare('SELECT * FROM exams WHERE id=?').get(id || req.params.id);
