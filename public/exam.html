@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="js/theme-init.js"></script>
+<title>Examination in progress — ExamSuite</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .exam-shell { display: grid; grid-template-columns: 230px 1fr; gap: 24px;
+    align-items: start; max-width: 1060px; margin: 0 auto; padding: 24px 24px 56px; }
+  @media (max-width: 780px) { .exam-shell { grid-template-columns: 1fr; } }
+  .timer-bar { background: var(--primary); color: #06120D; position: sticky; top: 0; z-index: 20; }
+  .timer-inner { max-width: 1060px; margin: 0 auto; padding: 13px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; font-weight: 600; }
+  .timer-value { font-family: var(--font-mono); font-size: 1.25rem; letter-spacing: 0.03em;
+    background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: var(--radius-pill); }
+  .timer-value.low { background: var(--danger); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.55; } }
+  .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .nav-cell { aspect-ratio: 1; border: 1.5px solid var(--border); background: var(--surface);
+    border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 0.8rem; cursor: pointer; color: var(--text-mute); }
+  .nav-cell.answered { background: var(--success-soft); border-color: var(--success); color: var(--success); }
+  .nav-cell.current { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .option-row { display: flex; align-items: flex-start; gap: 12px; padding: 13px 14px;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 10px; cursor: pointer; }
+  .option-row:hover { border-color: var(--text-mute); }
+  .option-row.selected { border-color: var(--primary); background: var(--primary-soft); }
+  .option-bubble { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--text-mute);
+    flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; }
+  .option-row.selected .option-bubble { border-color: var(--primary); }
+  .option-bubble .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); display: none; }
+  .option-row.selected .option-bubble .dot { display: block; }
+  .autosave { font-size: 0.78rem; opacity: 0.85; }
+  #examMain { user-select: none; -webkit-user-select: none; }
+  #examMain input, #examMain textarea { user-select: text; -webkit-user-select: text; }
+  .integrity-banner { position: sticky; top: 53px; z-index: 19; background: var(--danger); color: #fff;
+    padding: 10px 24px; font-size: 0.85rem; font-weight: 600; text-align: center; }
+  .integrity-banner button { margin-left: 12px; }
+  .gate-feature { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .gate-feature:last-child { border-bottom: none; }
+  .gate-feature .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); margin-top: 7px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="timer-bar">
+  <div class="timer-inner">
+    <span id="examTitleTag">Loading…</span>
+    <span style="display:flex; align-items:center; gap:14px;">
+      <span class="autosave" id="autosaveTag"></span>
+      <span class="timer-value" id="timerValue">--:--</span>
+    </span>
+  </div>
+</div>
+<div class="integrity-banner" id="integrityBanner" style="display:none;"></div>
+
+<main id="examMain" style="display:none;">
+  <div class="exam-shell">
+    <aside>
+      <div class="card" style="padding: 16px; position: sticky; top: 76px;">
+        <p class="hint" style="margin-bottom: 10px;">Question navigator</p>
+        <div class="nav-grid" id="navGrid"></div>
+        <p class="hint" style="margin-top: 12px;"><span style="color: var(--success); font-weight: 700;">&#9679;</span> answered &nbsp; <span id="answeredCount"></span></p>
+        <button class="btn btn-gold btn-block btn-sm" id="submitSideBtn" style="margin-top: 10px;">Submit paper</button>
+        <p class="hint" style="margin-top: 12px; font-size: 0.72rem;">Security: leaving this tab, exiting full-screen, and copy/paste are recorded.</p>
+      </div>
+    </aside>
+    <section class="card" id="questionSheet"></section>
+  </div>
+</main>
+
+<main id="gateMain" style="max-width: 640px; margin: 40px auto; padding: 0 20px; display:none;">
+  <div class="card" style="padding: 30px;">
+    <h1 id="gateTitle" style="font-size:1.4rem;">Loading…</h1>
+    <p class="hint" id="gateMeta"></p>
+    <div id="gateInstructions"></div>
+    <div class="section-title" style="margin-top:18px;"><h2 style="font-size:1rem;">Before you begin</h2></div>
+    <div id="gateFeatures"></div>
+    <div id="gateError" class="error-text" style="display:none; margin-top:14px;"></div>
+    <button class="btn btn-gold btn-block" id="gateBeginBtn" style="margin-top: 20px;">Begin exam</button>
+  </div>
+</main>
+
+<main id="loadingMain" style="max-width: 1060px; margin: 0 auto; padding: 28px 24px;">
+  <p>Preparing your paper…</p>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/exam.js"></script>
+</body>
+</html>

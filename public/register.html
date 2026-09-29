@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="js/theme-init.js"></script>
+<title>Register — ExamSuite</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body style="background: var(--bg); min-height: 100vh;">
+
+<header class="topbar" style="background: transparent; border-bottom: 1px solid var(--border); padding: 22px 32px;">
+  <a href="index.html" class="sidebar-brand" style="padding:0; border-bottom:none; margin-bottom:0;">
+    <span class="mark">FPA</span>
+    <span>
+      <span class="name">ExamSuite</span>
+      <span class="institution-line">The Federal Polytechnic, Ado-Ekiti</span>
+    </span>
+  </a>
+  <button class="theme-toggle" data-theme-toggle type="button"></button>
+</header>
+
+<main style="max-width: 500px; margin: 20px auto 60px; padding: 0 20px;">
+  <div class="card" style="padding: 32px;">
+    <h1 style="font-size: 1.5rem;">Create an account</h1>
+    <p class="hint" style="margin-bottom: 16px;">Student sign-up only. Lecturer and administrator accounts are created by an administrator. You will register for courses separately once registration opens.</p>
+
+    <form id="registerForm">
+      <div class="field">
+        <label for="name">Full name</label>
+        <input type="text" id="name" required>
+      </div>
+
+      <div class="field-row">
+        <div class="field" id="matricField">
+        <label for="matric">Matriculation number</label>
+        <input type="text" id="matric" placeholder="FPA/CS/24/3-0000">
+      </div>
+        <div class="field">
+          <label for="level">Level</label>
+          <select id="level" required><option value="">Select…</option><option>ND I</option><option>ND II</option><option>HND I</option><option>HND II</option></select>
+        </div>
+        <div class="field">
+          <label for="department">Department</label>
+          <select id="department" required><option value="">Select department…</option></select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" required autocomplete="username">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" required minlength="8" autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label for="password2">Confirm</label>
+          <input type="password" id="password2" required minlength="8" autocomplete="new-password">
+        </div>
+      </div>
+
+      <div id="formError" class="error-text" style="display:none; margin-bottom: 14px;"></div>
+      <button type="submit" class="btn btn-block btn-pill">Create account</button>
+    </form>
+    <p class="hint" style="margin-top: 16px; text-align: center;">
+      Already registered? <a href="login.html">Log in</a>
+    </p>
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/register.js"></script>
+</body>
+</html>

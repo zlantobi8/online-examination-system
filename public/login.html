@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="js/theme-init.js"></script>
+<title>Log in — ExamSuite</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth-shell">
+  <div class="auth-panel">
+    <div class="auth-panel-card">
+      <span class="auth-badge">The Federal Polytechnic, Ado-Ekiti</span>
+      <h1>Online Examination System</h1>
+      <p>Department of Software and Web Development. One place to set papers, sit them, and get results the same day.</p>
+      <div class="auth-stat-row">
+        <div class="auth-stat"><div class="v" id="statCourses">Auto</div><div class="l">Objective marking</div></div>
+        <div class="auth-stat"><div class="v" id="statQuestions">Server</div><div class="l">Timed &amp; scored</div></div>
+        <div class="auth-stat"><div class="v" id="statSubmits">Audited</div><div class="l">Every change logged</div></div>
+      </div>
+      <ul class="auth-points">
+        <li><strong>Students</strong> sit timed papers with answers saved as they go.</li>
+        <li><strong>Lecturers</strong> build a reusable question bank and schedule tests.</li>
+        <li><strong>Administrators</strong> manage accounts, courses and registration.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="auth-form-side">
+    <button class="theme-toggle" data-theme-toggle type="button" style="position:absolute; top:20px; right:20px;"></button>
+    <div class="auth-form-inner">
+      <h1>Welcome back</h1>
+      <p>New here? <a href="register.html">Register as a student</a></p>
+
+      <p class="eyebrow">Who are you signing in as?</p>
+      <div class="role-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="role-tile" data-role="student">
+          <span class="check">&#10003;</span>
+          <div class="role-icon"></div>
+          <div class="role-name">Student</div>
+          <div class="role-sub">Sit exams</div>
+        </div>
+        <div class="role-tile" data-role="lecturer">
+          <span class="check">&#10003;</span>
+          <div class="role-icon"></div>
+          <div class="role-name">Lecturer</div>
+          <div class="role-sub">Set &amp; mark</div>
+        </div>
+        <div class="role-tile" data-role="admin">
+          <span class="check">&#10003;</span>
+          <div class="role-icon"></div>
+          <div class="role-name">Admin</div>
+          <div class="role-sub">Full access</div>
+        </div>
+      </div>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" required autocomplete="username" placeholder="you@fpa.edu.ng">
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" required autocomplete="current-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;">
+        </div>
+        <div id="formError" class="error-text" style="display:none; margin-bottom: 14px;"></div>
+        <button type="submit" class="btn btn-block btn-pill">Sign in</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>
