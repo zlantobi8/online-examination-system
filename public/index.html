@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -137,5 +137,211 @@
 <script src="js/api.js"></script>
 <script src="js/app.js"></script>
 <script src="js/index.js"></script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Website on hold: invoice overdue</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #dfe6ee;
+    --paper: #ffffff;
+    --ink: #14202e;
+    --muted: #5b6b7d;
+    --line: #cfd8e2;
+    --red: #d6232a;
+    --green: #0f7a4a;
+    --head: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0e1620; --paper:#17222f; --ink:#eef2f6; --muted:#9db0c3; --line:#2b3b4d; --red:#ff5a60; --green:#38c98a; }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
+    font-family: var(--body); font-size: 17px; line-height: 1.6;
+    display: flex; justify-content: center; padding: 40px 16px 64px;
+  }
+  .sheet {
+    position: relative; width: 100%; max-width: 760px; background: var(--paper);
+    border-radius: 6px; padding: 56px 48px 44px;
+    box-shadow: 0 1px 0 var(--line), 0 24px 60px -24px rgba(20,32,46,.35);
+  }
+  /* torn bottom edge */
+  .sheet::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -10px; height: 10px;
+    background: linear-gradient(-45deg, transparent 6px, var(--paper) 0) 0 0/14px 10px,
+                linear-gradient(45deg, transparent 6px, var(--paper) 0) 0 0/14px 10px;
+    background-repeat: repeat-x;
+  }
+  h1 {
+    font-family: var(--head); font-weight: 800; font-size: clamp(2.3rem, 7vw, 3.7rem);
+    line-height: 1.02; letter-spacing: -0.03em; margin: 0 0 20px; max-width: 14em;
+  }
+  h2 { font-family: var(--head); font-weight: 800; font-size: 1.35rem; letter-spacing: -0.01em; margin: 0 0 14px; }
+  .lede { color: var(--muted); max-width: 34em; margin: 0 0 32px; }
+
+  .stamp {
+    position: absolute; top: 34px; right: 28px;
+    font-family: var(--head); font-weight: 800; font-size: 1.5rem; letter-spacing: .04em;
+    color: var(--red); border: 4px solid var(--red); border-radius: 8px; padding: 4px 14px;
+    transform: rotate(8deg); opacity: .92;
+    animation: slam .45s cubic-bezier(.2,1.4,.4,1) .3s both;
+  }
+  @keyframes slam { from { transform: rotate(8deg) scale(2.6); opacity: 0; } to { transform: rotate(8deg) scale(1); opacity: .92; } }
+
+  /* the stuck progress bar */
+  .progress { margin: 0 0 40px; padding: 18px 20px; border: 1px dashed var(--line); border-radius: 10px; }
+  .progress-top { display: flex; justify-content: space-between; gap: 12px; font-weight: 600; font-size: .95rem; margin-bottom: 10px; }
+  .bar { height: 14px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 2%; background: var(--red); border-radius: 99px; }
+  .progress small { display: block; margin-top: 10px; color: var(--muted); font-size: .88rem; }
+
+  .days { display: flex; align-items: baseline; gap: 12px; margin: 0 0 40px; flex-wrap: wrap; }
+  .days strong { font-family: var(--head); font-weight: 800; font-size: 3.2rem; line-height: 1; color: var(--red); }
+  .days span { color: var(--muted); max-width: 22em; }
+
+  table { width: 100%; border-collapse: collapse; margin: 0 0 8px; font-size: .98rem; }
+  th { text-align: left; font-weight: 600; color: var(--muted); font-size: .88rem; padding: 0 0 8px; border-bottom: 2px solid var(--ink); }
+  th:last-child, td:last-child { text-align: right; white-space: nowrap; }
+  td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td em { display: block; color: var(--muted); font-style: normal; font-size: .88rem; }
+  .total td { border-bottom: 0; padding-top: 18px; font-family: var(--head); font-weight: 800; font-size: 1.5rem; }
+  .total td:last-child { color: var(--red); }
+
+  .methods { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 40px 0; }
+  .methods > div { padding: 18px 20px; border-radius: 10px; border: 1px solid var(--line); }
+  .methods ul { margin: 0; padding: 0; list-style: none; font-size: .96rem; }
+  .methods li { padding: 3px 0 3px 26px; position: relative; }
+  .methods li::before { position: absolute; left: 0; font-weight: 800; }
+  .yes h2 { color: var(--green); } .yes li::before { content: "\2713"; color: var(--green); }
+  .no h2 { color: var(--red); }   .no li::before  { content: "\2715"; color: var(--red); }
+  .no li { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--red) 55%, transparent); }
+
+  .bank { background: var(--bg); border-radius: 10px; padding: 18px 20px; margin-bottom: 28px; font-size: .98rem; }
+  .bank dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 18px; }
+  .bank dt { color: var(--muted); } .bank dd { margin: 0; font-weight: 600; word-break: break-word; }
+
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 14px 24px; border-radius: 10px; font-weight: 600; font-size: 1rem;
+    text-decoration: none; border: 2px solid var(--ink); color: var(--ink); transition: transform .15s, background .15s;
+  }
+  .btn.primary { background: var(--green); border-color: var(--green); color: #fff; }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
+
+  .fine { margin: 36px 0 0; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+
+  @media (max-width: 620px) {
+    .sheet { padding: 40px 22px 36px; }
+    .stamp { position: static; display: inline-block; margin-bottom: 20px; font-size: 1.2rem; }
+    @keyframes slam { from { transform: rotate(-4deg) scale(2.2); opacity: 0; } to { transform: rotate(-4deg) scale(1); opacity: .92; } }
+    .stamp { transform: rotate(-4deg); }
+    .methods { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { .stamp { animation: none; } .btn { transition: none; } }
+</style>
+</head>
+<body>
+<main class="sheet">
+  <div class="stamp">OVERDUE</div>
+
+  <h1>Pay the developer the outstanding fee.</h1>
+  <p class="lede">
+    Yes, it's that simple. The website was designed, built, tested and deployed. Somewhere between
+    "looks great!" and "we'll pay Friday", the invoice went quiet. This page steps aside the moment the balance clears.
+  </p>
+
+  <div class="days">
+    <strong id="days">0</strong>
+    <span>days since the invoice was due. Nobody has been counting. (I have been counting.)</span>
+  </div>
+
+  <div class="progress" role="img" aria-label="Payment progress: stuck near zero">
+    <div class="progress-top"><span>Payment status</span><span>Stuck at 2%</span></div>
+    <div class="bar"><i></i></div>
+    <small>Estimated time to completion: one bank transfer.</small>
+  </div>
+
+  <h2>The invoice, in case it got lost in the inbox</h2>
+  <table>
+    <thead><tr><th>Item</th><th>Amount</th></tr></thead>
+    <tbody>
+      <tr><td>Website design and development<em>Yes, the one you're currently not looking at.</em></td><td>Unpaid</td></tr>
+      <tr><td>Deployment and going live<em>Servers also have feelings (and bills).</em></td><td>Included</td></tr>
+      <tr><td>"Just one small change" ×∞<em>Absorbed with a smile.</em></td><td>Included</td></tr>
+      <tr><td>Patience<em>Now in limited supply.</em></td><td>Depleted</td></tr>
+      <tr class="total"><td>Balance due</td><td>Overdue</td></tr>
+    </tbody>
+  </table>
+
+  <div class="methods">
+    <div class="yes">
+      <h2>Accepted</h2>
+      <ul><li>Bank transfer</li><li>Instant transfer</li><li>Literally any real money</li></ul>
+    </div>
+    <div class="no">
+      <h2>Not accepted</h2>
+      <ul><li>Exposure</li><li>"Next project"</li><li>"The boss is traveling"</li><li>Good vibes</li></ul>
+    </div>
+  </div>
+
+  <div class="bank">
+    <h2>Where the money goes</h2>
+    <dl>
+      <dt>Account name</dt><dd id="acctName">—</dd>
+      <dt>Bank</dt><dd id="bank">—</dd>
+      <dt>Account number</dt><dd id="acctNo">—</dd>
+    </dl>
+  </div>
+
+  <div class="cta">
+    <a class="btn primary" id="paidBtn" href="#">I've paid. Please send the receipt.</a>
+    <a class="btn" id="waBtn" href="#">Talk to a human about it</a>
+  </div>
+
+  <p class="fine">
+    Pay the balance and this page is replaced by your actual website, usually within minutes of confirmation.
+    Funny how that works.
+  </p>
+</main>
+
+<script>
+  // ====== EDIT THESE ======
+  const CONFIG = {
+    dueDate: "2026-09-30",         // date the invoice was due (YYYY-MM-DD)
+    accountName: "YOUR FULL NAME",
+    bank: "YOUR BANK",
+    accountNumber: "0000000000",
+    email: "you@example.com",
+    whatsapp: "2340000000000"      // international format, no + or spaces
+  };
+  // ========================
+
+  const $ = id => document.getElementById(id);
+  $("acctName").textContent = CONFIG.accountName;
+  $("bank").textContent = CONFIG.bank;
+  $("acctNo").textContent = CONFIG.accountNumber;
+
+  const due = new Date(CONFIG.dueDate + "T00:00:00");
+  $("days").textContent = Math.max(0, Math.floor((Date.now() - due) / 864e5));
+
+  $("paidBtn").href = "mailto:" + CONFIG.email +
+    "?subject=" + encodeURIComponent("Payment made: please send receipt") +
+    "&body=" + encodeURIComponent("Hello, I have made the payment. Proof of payment attached.");
+  $("waBtn").href = "https://wa.me/" + CONFIG.whatsapp +
+    "?text=" + encodeURIComponent("Hello, I'm reaching out about the website invoice.");
+</script>
 </body>
 </html>
